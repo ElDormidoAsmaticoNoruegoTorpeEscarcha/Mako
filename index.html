@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Taller de Creación</title>
+
+<style>
+body{
+font-family:Arial;
+padding:20px;
+background:#f5f5f5;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:10px;
+margin-bottom:20px;
+}
+
+input,
+select,
+button{
+display:block;
+margin:10px 0;
+padding:10px;
+width:300px;
+}
+</style>
+
+</head>
+<body>
+
+<div id="loginCard" class="card">
+
+<h2>Iniciar Sesión</h2>
+
+<input
+type="email"
+id="email"
+placeholder="Correo">
+
+<input
+type="password"
+id="password"
+placeholder="Contraseña">
+
+<button onclick="login()">
+Entrar
+</button>
+
+</div>
+
+<div
+id="app"
+class="card"
+style="display:none;">
+
+<h2>Taller de Creación</h2>
+
+<p id="usuarioActual"></p>
+
+<h3>Solicitar Material</h3>
+
+<label>Material</label>
+
+<select id="material">
+
+<option value="Madera">Madera</option>
+<option value="Cartón">Cartón</option>
+<option value="Cartón Pluma">Cartón Pluma</option>
+<option value="MDF">MDF</option>
+<option value="Contrachapado">Contrachapado</option>
+<option value="Pintura">Pintura</option>
+<option value="Cola Blanca">Cola Blanca</option>
+<option value="Silicona">Silicona</option>
+<option value="Tornillos">Tornillos</option>
+
+</select>
+
+<label>Cantidad</label>
+
+<input
+type="number"
+id="cantidad"
+placeholder="Cantidad">
+
+<label>Unidad</label>
+
+<select id="unidad">
+
+<option value="unidades">
+Unidades
+</option>
+
+<option value="metros">
+Metros
+</option>
+
+<option value="metros cuadrados">
+Metros cuadrados
+</option>
+
+<option value="kilogramos">
+Kilogramos
+</option>
+
+</select>
+
+<button onclick="solicitarMaterial()">
+Enviar Solicitud
+</button>
+
+<div id="misSolicitudes"></div>
+
+</div>
+
+<script type="module">
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+
+import {
+getAuth,
+signInWithEmailAndPassword,
+onAuthStateChanged
+}
+from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+
+import {
+getFirestore,
+collection,
+addDoc,
+getDocs,
+query,
+where
+}
+from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+const firebaseConfig = {
+
+apiKey: "TU_API_KEY",
+
+authDomain:
+"startapp-9a-a7-mako.firebaseapp.com",
+
+projectId:
+"startapp-9a-a7-mako",
+
+storageBucket:
+"startapp-9a-a7-mako.firebasestorage.app",
+
+messagingSenderId:
+"500756905625",
+
+appId:
+"1:500756905625:web:cf5d181b1ddc60ee850208"
+
+};
+
+const app =
+initializeApp(firebaseConfig);
+
+const auth =
+getAuth(app);
+
+const db =
+getFirestore(app);
+
+let usuario = null;
+
+window.login =
+async function(){
+
+try{
+
+await signInWithEmailAndPassword(
+
+auth,
+
+document.getElementById("email").value,
+
+document.getElementById("password").value
+
+);
+
+}catch(error){
+
+alert(error.message);
+
+}
+
+}
+
+onAuthStateChanged(
+
+auth,
+
+async(user)=>{
+
+if(user){
+
+usuario = user;
+
+document.getElementById(
+"loginCard"
+).style.display="none";
+
+document.getElementById(
+"app"
+).style.display="block";
+
+document.getElementById(
+"usuarioActual"
+).innerHTML =
+user.email;
+
+cargarSolicitudes();
+
+}
+
+}
+
+);
+
+window.solicitarMaterial =
+async function(){
+
+await addDoc(
+
+collection(db,"solicitudes"),
+
+{
+uid:usuario.uid,
+
+email:usuario.email,
+
+material:
+document.getElementById(
+"material"
+).value,
+
+cantidad:
+Number(
+document.getElementById(
+"cantidad"
+).value
+),
+
+unidad:
+document.getElementById(
+"unidad"
+).value,
+
+estado:"pendiente",
+
+fecha:
+new Date().toISOString()
+
+}
+
+);
+
+alert(
+"Solicitud enviada"
+);
+
+cargarSolicitudes();
+
+}
+
+async function cargarSolicitudes(){
+
+const q = query(
+
+collection(db,"solicitudes"),
+
+where(
+"uid",
+"==",
+usuario.uid
+)
+
+);
+
+const datos =
+await getDocs(q);
+
+let html =
+"<h3>Mis Solicitudes</h3>";
+
+datos.forEach(doc=>{
+
+const s =
+doc.data();
+
+html += `
+<p>
+${s.material}
+-
+${s.cantidad}
+${s.unidad}
+-
+${s.estado}
+</p>
+`;
+
+});
+
+document.getElementById(
+"misSolicitudes"
+).innerHTML = html;
+
+}
+
+</script>
+
+</body>
+</html>
